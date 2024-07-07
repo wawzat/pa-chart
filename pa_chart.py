@@ -246,21 +246,25 @@ def process_sensor_reading(live_response):
 
 
 try:
-    delay_loop_start = datetime.now()
+    log_delay_loop_start = datetime.now()
+    plot_delay_loop_start = datetime.now()
     # Loop forever
     while 1:
         if logging_start_hour < datetime.now().hour <= logging_finish_hour:
-            live_response, conn_success = get_live_reading(connection_url)
-            pm2_5_live, humidity_live, conn_success = process_sensor_reading(live_response)
-            if conn_success:
-                Ipm25_live = AQI.calculate(EPA.calculate(pm2_5_live, humidity_live))
-            sleep(logging_interval)
-        write_data(Ipm25_live, conn_success, data_file_name)
-        truncate_earliest_data(data_file_name, days_to_log)
-        elapsed_time = datetime.now() - delay_loop_start
-        if elapsed_time.seconds > plotting_interval:
-            plot_csv_to_jpg(data_file_name, width_pixels, height_pixels, dpi)
-            delay_loop_start = datetime.now()
+            elapsed_time = (datetime.now() - log_delay_loop_start).seconds
+            if elapsed_time > logging_interval:
+                live_response, conn_success = get_live_reading(connection_url)
+                pm2_5_live, humidity_live, conn_success = process_sensor_reading(live_response)
+                if conn_success:
+                    Ipm25_live = AQI.calculate(EPA.calculate(pm2_5_live, humidity_live))
+                sleep(1)
+                write_data(Ipm25_live, conn_success, data_file_name)
+                truncate_earliest_data(data_file_name, days_to_log)
+                log_delay_loop_start = datetime.now()
+            elapsed_time = (datetime.now() - plot_delay_loop_start).seconds
+            if elapsed_time > plotting_interval:
+                plot_csv_to_jpg(data_file_name, width_pixels, height_pixels, dpi)
+                plot_delay_loop_start = datetime.now()
 
 except KeyboardInterrupt:
     sys.exit()
