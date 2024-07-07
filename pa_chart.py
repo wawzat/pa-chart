@@ -1,5 +1,6 @@
-# Logs readings from a PurpleAir sensor on local LAN, converts to "EPA AQI", saves the log and plots it as a .jpg file.
-# James S. Lucas - 20240706
+# Logs readings from a PurpleAir sensor on local LAN, converts to "EPA AQI", saves the logto a csv file
+#  and plots the data as a .jpg file.
+# James S. Lucas - 20240707
 import json
 import csv
 import requests
@@ -23,7 +24,7 @@ logging_start_hour = 0
 logging_finish_hour = 24
 
 
-# Creates a logger
+# Create an error logger
 logger = logging.getLogger(__name__)  
 # set log level
 logger.setLevel(logging.WARNING)
@@ -104,6 +105,20 @@ def write_data(Ipm25_live, conn_success, filename='sensor_data.csv'):
 
 
 def truncate_earliest_data(filename, days_to_log=14):
+    """
+    Truncates the earliest data in a CSV file based on a specified number of days.
+
+    Args:
+        filename (str): The path to the CSV file.
+        days_to_log (int, optional): The number of days to keep in the file. Defaults to 14.
+
+    Returns:
+        None
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+
+    """
     with open(filename, mode='r', newline='') as file:
         reader = csv.DictReader(file)
         data = list(reader)
@@ -118,10 +133,10 @@ def truncate_earliest_data(filename, days_to_log=14):
     # Convert datetime objects back to strings for CSV output
     for row in filtered_data:
         row['datetime'] = row['datetime'].strftime('%Y-%m-%dT%H:%M:%S')
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=reader.fieldnames)
-        writer.writeheader()
-        writer.writerows(filtered_data)
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=reader.fieldnames)
+            writer.writeheader()
+            writer.writerows(filtered_data)
 
 
 def plot_csv_to_jpg(filename):
@@ -155,24 +170,23 @@ def plot_csv_to_jpg(filename):
     # Simplify the x-axis labels
     ax = plt.gca()  # Get current axes
     ax.set_xlim(min(dates), max(dates))
-    # Adjust the major locator and formatter based on the range of your data
+    # Adjust the major locator and formatter based on the range of the data
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xlabel('Datetime')
     plt.xticks(rotation=45)  # Rotate labels for better legibility
-    #plt.tight_layout()  # Adjust layout to make room for the rotated x-axis labels
-     # Set vertical axis ticks from 0 to 200 in increments of 50
+    # Set vertical axis ticks from 0 to 200 in increments of 50
     plt.yticks(range(0, 201, 50))
     # Plot colored bands
     ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
     ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
     ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
     ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
+    #  
     plt.ylabel('Ipm25_live')
     plt.title('Sensor Data', pad=20)
-    plt.xticks(rotation=45)
-    plt.savefig('sensor_data.jpg', bbox_inches='tight')
     #plt.subplots_adjust(top=1.5, bottom=0.4, left=0.5, right=0.95)
+    plt.savefig('sensor_data.jpg', bbox_inches='tight')
     plt.close()
 
 
@@ -186,6 +200,7 @@ def get_live_reading(connection_url):
 
     Returns:
     Response: A Response object containing the live sensor reading from the PurpleAir sensor.
+    conn_success (bool): A flag indicating if the connection was successful.
     """
     live_flag = "?live=true"
     live_connection_string = connection_url + live_flag
@@ -205,7 +220,9 @@ def process_sensor_reading(live_response):
     connection_url (str): The URL of the PurpleAir sensor.
 
     Returns:
-    tuple: A tuple containing the average PM2.5 reading, live PM2.5 reading, confidence level, and connection success status.
+    pm2_5_reading_live (float): The live PM2.5 reading from the sensor.
+    humidity_live (float): The live humidity reading from the sensor.
+    conn_success (bool): A flag indicating if the connection was successful.
     """
     if live_response.ok:
         conn_success = True
@@ -219,8 +236,8 @@ def process_sensor_reading(live_response):
 
 
 try:
-    # Loop forever
     delay_loop_start = datetime.now()
+    # Loop forever
     while 1:
         if logging_start_hour < datetime.now().hour <= logging_finish_hour:
             live_response, conn_success = get_live_reading(connection_url)
