@@ -257,7 +257,6 @@ try:
                 pm2_5_live, humidity_live, conn_success = process_sensor_reading(live_response)
                 if conn_success:
                     Ipm25_live = AQI.calculate(EPA.calculate(pm2_5_live, humidity_live))
-                sleep(1)
                 write_data(Ipm25_live, conn_success, data_file_name)
                 truncate_earliest_data(data_file_name, days_to_log)
                 log_delay_loop_start = datetime.now()
@@ -265,6 +264,7 @@ try:
             if elapsed_time > plotting_interval:
                 plot_csv_to_jpg(data_file_name, width_pixels, height_pixels, dpi)
                 plot_delay_loop_start = datetime.now()
+        sleep(1)
 
 except KeyboardInterrupt:
     sys.exit()
