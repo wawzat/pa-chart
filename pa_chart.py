@@ -104,32 +104,20 @@ def write_data(Ipm25_live, conn_success, filename='sensor_data.csv'):
 
 
 def truncate_earliest_data(filename, days_to_log=14):
-    # Step 1: Read the CSV file into a list of dictionaries
     with open(filename, mode='r', newline='') as file:
         reader = csv.DictReader(file)
         data = list(reader)
-    
-    # Ensure there's a date column and convert date strings to datetime objects
     for row in data:
         row['datetime'] = datetime.strptime(row['datetime'], '%Y-%m-%dT%H:%M:%S')
-    
-    # Step 3: Determine the cutoff date
     latest_date = max(row['datetime'] for row in data)
     cutoff_date = latest_date - timedelta(days=days_to_log)
-    
-    # Step 4: Filter the data
     filtered_data = [row for row in data if row['datetime'] >= cutoff_date]
-
-    # Check if filtering is necessary
     if len(filtered_data) == len(data):
         # No data needs to be truncated, exit the function
         return
-
     # Convert datetime objects back to strings for CSV output
     for row in filtered_data:
         row['datetime'] = row['datetime'].strftime('%Y-%m-%dT%H:%M:%S')
-    
-    # Step 5: Write the filtered data back to the CSV file
     with open(filename, mode='w', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=reader.fieldnames)
         writer.writeheader()
