@@ -22,6 +22,9 @@ days_to_log = 14
 plotting_interval = 240 # seconds
 logging_start_hour = 0
 logging_finish_hour = 24
+width_pixels = 800
+height_pixels = 600
+dpi = 100
 
 
 # Create an error logger
@@ -34,6 +37,62 @@ formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(messag
 file_handler.setFormatter(formatter)
 # add file handler to logger
 logger.addHandler(file_handler)
+
+
+def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100):
+    """
+    This function opens a CSV file and plots the data to a JPG file with adjustable size.
+
+    Args:
+        filename (str): The name of the CSV file.
+        width_pixels (int): Width of the output image in pixels.
+        height_pixels (int): Height of the output image in pixels.
+        dpi (int): Dots per inch for the output image.
+
+    Returns:
+        None
+    """
+    # Calculate figure size in inches
+    width_inches = width_pixels / dpi
+    height_inches = height_pixels / dpi
+
+    # Set figure size
+    plt.figure(figsize=(width_inches, height_inches))
+
+    # Read the CSV file
+    with open(filename, 'r', newline='') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        dates = []
+        values = []
+        for row in reader:
+            try:
+                # Attempt to parse the datetime with the expected format
+                parsed_date = datetime.strptime(row[0],'%Y-%m-%dT%H:%M:%S')
+            except ValueError:
+                # If parsing fails, print the problematic datetime string and skip this row
+                print(f"Could not parse datetime: {row[0]}")
+                continue
+            dates.append(parsed_date)
+            values.append(float(row[1]))
+
+    # Plot the data
+    plt.plot(dates, values)
+    ax = plt.gca()  # Get current axes
+    ax.set_xlim(min(dates), max(dates))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.xlabel('Datetime')
+    plt.xticks(rotation=45)
+    plt.yticks(range(0, 201, 50))
+    ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
+    plt.ylabel('Ipm25_live')
+    plt.title('Sensor Data', pad=20)
+    plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
+    plt.close()
 
 
 def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
@@ -139,55 +198,6 @@ def truncate_earliest_data(filename, days_to_log=14):
             writer.writerows(filtered_data)
 
 
-def plot_csv_to_jpg(filename):
-    """
-    This function opens a CSV file and plots the data to a JPG file.
-
-    Args:
-        filename (str): The name of the CSV file.
-
-    Returns:
-        None
-    """
-    # Read the CSV file
-    with open(filename, 'r', newline='') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the header row
-        dates = []
-        values = []
-        for row in reader:
-            try:
-                # Attempt to parse the datetime with the expected format
-                parsed_date = datetime.strptime(row[0],'%Y-%m-%dT%H:%M:%S')
-            except ValueError:
-                # If parsing fails, print the problematic datetime string and skip this row
-                print(f"Could not parse datetime: {row[0]}")
-                continue
-            dates.append(parsed_date)
-            values.append(float(row[1]))
-    # Plot the data
-    plt.plot(dates, values)
-    # Simplify the x-axis labels
-    ax = plt.gca()  # Get current axes
-    ax.set_xlim(min(dates), max(dates))
-    # Adjust the major locator and formatter based on the range of the data
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.xlabel('Datetime')
-    plt.xticks(rotation=45)  # Rotate labels for better legibility
-    # Set vertical axis ticks from 0 to 200 in increments of 50
-    plt.yticks(range(0, 201, 50))
-    # Plot colored bands
-    ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
-    #  
-    plt.ylabel('Ipm25_live')
-    plt.title('Sensor Data', pad=20)
-    #plt.subplots_adjust(top=1.5, bottom=0.4, left=0.5, right=0.95)
-    plt.savefig('sensor_data.jpg', bbox_inches='tight')
-    plt.close()
 
 
 @retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
@@ -249,7 +259,7 @@ try:
         truncate_earliest_data(data_file_name, days_to_log)
         elapsed_time = datetime.now() - delay_loop_start
         if elapsed_time.seconds > plotting_interval:
-            plot_csv_to_jpg(data_file_name)
+            plot_csv_to_jpg(data_file_name, width_pixels, height_pixels, dpi)
             delay_loop_start = datetime.now()
 
 except KeyboardInterrupt:
