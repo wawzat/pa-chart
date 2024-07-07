@@ -172,7 +172,7 @@ def plot_csv_to_jpg(filename):
     plt.title('Sensor Data', pad=20)
     plt.xticks(rotation=45)
     plt.savefig('sensor_data.jpg', bbox_inches='tight')
-    plt.subplots_adjust(top=1.5, bottom=0.4, left=0.5, right=0.95)
+    #plt.subplots_adjust(top=1.5, bottom=0.4, left=0.5, right=0.95)
     plt.close()
 
 
