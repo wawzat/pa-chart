@@ -9,3 +9,4 @@ Log data directly from a PurpleAir sensor on the network to a csv file and plot 
 ## To use: 
 * Optional: start a <a href="https://linuxize.com/post/how-to-use-linux-screen/" target="_blank">screen</a> session so that the program keeps running after you close the terminal.
 * python pa_chart.py
+* ctrl-c exits the program
