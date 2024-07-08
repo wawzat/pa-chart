@@ -81,4 +81,3 @@ class EPA:
             return PM2_5_epa
         except Exception as e:
             logging.exception('calc_epa() error')
-
