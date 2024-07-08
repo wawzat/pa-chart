@@ -9,22 +9,9 @@ from datetime import datetime, timedelta
 import sys
 import logging
 from conversions import AQI, EPA
+import config
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-
-
-#User defined variables
-connection_url = "http://192.168.20.36/json"
-data_file_name = "sensor_data.csv"
-#data_file_name = "test_data.csv"
-logging_interval = 120 # seconds
-days_to_log = 14
-plotting_interval = 240 # seconds
-logging_start_hour = 0
-logging_finish_hour = 24
-width_pixels = 800
-height_pixels = 600
-dpi = 100
 
 
 # Create an error logger
@@ -37,62 +24,6 @@ formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(messag
 file_handler.setFormatter(formatter)
 # add file handler to logger
 logger.addHandler(file_handler)
-
-
-def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100):
-    """
-    This function opens a CSV file and plots the data to a JPG file with adjustable size.
-
-    Args:
-        filename (str): The name of the CSV file.
-        width_pixels (int): Width of the output image in pixels.
-        height_pixels (int): Height of the output image in pixels.
-        dpi (int): Dots per inch for the output image.
-
-    Returns:
-        None
-    """
-    # Calculate figure size in inches
-    width_inches = width_pixels / dpi
-    height_inches = height_pixels / dpi
-
-    # Set figure size
-    plt.figure(figsize=(width_inches, height_inches))
-
-    # Read the CSV file
-    with open(filename, 'r', newline='') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip the header row
-        dates = []
-        values = []
-        for row in reader:
-            try:
-                # Attempt to parse the datetime with the expected format
-                parsed_date = datetime.strptime(row[0],'%Y-%m-%dT%H:%M:%S')
-            except ValueError:
-                # If parsing fails, print the problematic datetime string and skip this row
-                print(f"Could not parse datetime: {row[0]}")
-                continue
-            dates.append(parsed_date)
-            values.append(float(row[1]))
-
-    # Plot the data
-    plt.plot(dates, values)
-    ax = plt.gca()  # Get current axes
-    ax.set_xlim(min(dates), max(dates))
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.xlabel('Datetime')
-    plt.xticks(rotation=45)
-    plt.yticks(range(0, 201, 50))
-    ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
-    plt.ylabel('Ipm25_live')
-    plt.title('Sensor Data', pad=20)
-    plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
-    plt.close()
 
 
 def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
@@ -129,12 +60,34 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
     return decorator
 
 
-def write_data(Ipm25_live, conn_success, filename='sensor_data.csv'):
+@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+def get_live_reading(connection_url):
+    """
+    This function gets the live sensor reading from a PurpleAir sensor.
+
+    Parameters:
+    connection_url (str): The URL of the PurpleAir sensor.
+
+    Returns:
+    Response: A Response object containing the live sensor reading from the PurpleAir sensor.
+    conn_success (bool): A flag indicating if the connection was successful.
+    """
+    live_flag = "?live=true"
+    live_connection_string = connection_url + live_flag
+    live_response = requests.get(live_connection_string)
+    if live_response.ok:
+        conn_success = True
+    else:
+        conn_success = False
+    return live_response, conn_success
+
+
+def write_data(pm25_epa_aqi, conn_success, filename='sensor_data.csv'):
     """
     This function writes data to a csv file with a consistent datetime format.
 
     Args:
-        Ipm25_live (float): The live PM2.5 value.
+        pm25_epa_aqi (float): The live PM2.5 value.
         conn_success (bool): A flag indicating if the connection to the sensor was successful.
         filename (str): The name of the CSV file.
 
@@ -144,7 +97,6 @@ def write_data(Ipm25_live, conn_success, filename='sensor_data.csv'):
     if not conn_success:
         logger.error('write_data() connection error')
         sleep(2)
-    print(Ipm25_live)
     # Check if the file is empty to decide on writing the header
     try:
         with open(filename, 'r', newline='') as file:
@@ -152,15 +104,14 @@ def write_data(Ipm25_live, conn_success, filename='sensor_data.csv'):
             file_empty = not bool(first_char)
     except FileNotFoundError:
         file_empty = True
-    
     with open(filename, 'a', newline='') as file:
         writer = csv.writer(file)
         if file_empty:
             # Write the header if the file is empty
-            writer.writerow(['datetime', 'Ipm25_live'])
+            writer.writerow(['datetime', 'pm25_epa_aqi'])
         # Format the datetime object into a string with a specific format
         formatted_datetime = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        writer.writerow([formatted_datetime, Ipm25_live])
+        writer.writerow([formatted_datetime, pm25_epa_aqi])
 
 
 def truncate_earliest_data(filename, days_to_log=14):
@@ -198,72 +149,116 @@ def truncate_earliest_data(filename, days_to_log=14):
             writer.writerows(filtered_data)
 
 
-
-
-@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
-def get_live_reading(connection_url):
-    """
-    This function gets the live sensor reading from a PurpleAir sensor.
-
-    Parameters:
-    connection_url (str): The URL of the PurpleAir sensor.
-
-    Returns:
-    Response: A Response object containing the live sensor reading from the PurpleAir sensor.
-    conn_success (bool): A flag indicating if the connection was successful.
-    """
-    live_flag = "?live=true"
-    live_connection_string = connection_url + live_flag
-    live_response = requests.get(live_connection_string)
-    if live_response.ok:
-        conn_success = True
-    else:
-        conn_success = False
-    return live_response, conn_success
-
-
 def process_sensor_reading(live_response):
     """
-    This function processes sensor readings from a PurpleAir sensor.
+    Process the sensor reading from the live response.
 
-    Parameters:
-    connection_url (str): The URL of the PurpleAir sensor.
+    Args:
+        live_response (Response): The live response object.
 
     Returns:
-    pm2_5_reading_live (float): The live PM2.5 reading from the sensor.
-    humidity_live (float): The live humidity reading from the sensor.
-    conn_success (bool): A flag indicating if the connection was successful.
+        tuple: A tuple containing the processed PM2.5 reading, humidity reading, and connection success status.
+
+    Raises:
+        None
     """
     if live_response.ok:
         conn_success = True
         live_sensor_reading = json.loads(live_response.text)
-        pm2_5_reading_live = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
-        humidity_live = (live_sensor_reading['current_humidity'])
+        pm2_5_cf1 = (live_sensor_reading['pm2_5_cf_1'] + live_sensor_reading['pm2_5_cf_1_b']) / 2
+        humidity = (live_sensor_reading['current_humidity']) + 4
     else:
         logger.error('Error: status code not ok')
         conn_success = False
-    return pm2_5_reading_live, humidity_live, conn_success
+    return pm2_5_cf1, humidity, conn_success
+
+
+def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100, include_aqi_text=True, chart_title='Particulate Sensor Data', y_axis_label='EPA PM 2.5 AQI', x_axis_label=' '):
+    """
+    Plot the data from a CSV file and save it as a JPG image.
+
+    Parameters:
+    - filename (str): The path to the CSV file.
+    - width_pixels (int): The width of the output image in pixels (default: 800).
+    - height_pixels (int): The height of the output image in pixels (default: 600).
+    - dpi (int): The resolution of the output image in dots per inch (default: 100).
+    - include_aqi_text (bool): Whether to include the AQI text on the chart (default: True).
+    - chart_title (str): The title of the chart (default: 'Particulate Sensor Data').
+    - y_axis_label (str): The label for the y-axis (default: 'EPA PM 2.5 AQI').
+    - x_axis_label (str): The label for the x-axis (default: ' ').
+
+    Returns:
+    None
+    """
+    # Calculate figure size in inches
+    width_inches = width_pixels / dpi
+    height_inches = height_pixels / dpi
+    # Set figure size
+    plt.figure(figsize=(width_inches, height_inches))
+    # Read the CSV file
+    with open(filename, 'r', newline='') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        dates = []
+        values = []
+        for row in reader:
+            try:
+                # Attempt to parse the datetime with the expected format
+                parsed_date = datetime.strptime(row[0],'%Y-%m-%dT%H:%M:%S')
+            except ValueError:
+                # If parsing fails, print the problematic datetime string and skip this row
+                print(f"Could not parse datetime: {row[0]}")
+                continue
+            dates.append(parsed_date)
+            values.append(float(row[1]))
+    # Plot the data
+    plt.plot(dates, values)
+    ax = plt.gca()  # Get current axes
+    ax.set_xlim(min(dates), max(dates))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.xlabel(x_axis_label)
+    plt.xticks(rotation=45)
+    plt.yticks(range(0, 201, 50))
+    ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
+    plt.ylabel(y_axis_label)
+    plt.title(chart_title, pad=20)
+    if include_aqi_text:
+        # First part: "EPA AQI as of DATE" with font size 8 and not bold'%Y-%m-%dT%H:%M:%S'
+        plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=8, ha='right', va='bottom', transform=ax.transAxes)
+        # Second part: "value" with font size 12 and bold
+        plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
+    plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
+    plt.close()
 
 
 try:
-    log_delay_loop_start = datetime.now()
-    plot_delay_loop_start = datetime.now()
+    log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
     # Loop forever
     while 1:
-        if logging_start_hour < datetime.now().hour <= logging_finish_hour:
-            elapsed_time = (datetime.now() - log_delay_loop_start).seconds
-            if elapsed_time > logging_interval:
-                live_response, conn_success = get_live_reading(connection_url)
-                pm2_5_live, humidity_live, conn_success = process_sensor_reading(live_response)
+        if config.logging_start_hour < datetime.now().hour <= config.logging_finish_hour:
+            elapsed_time = (datetime.now() - log_delay_loop_start).total_seconds()
+            if elapsed_time > config.logging_interval:
+                live_response, conn_success = get_live_reading(config.connection_url)
+                pm2_5_cf1, humidity, conn_success = process_sensor_reading(live_response)
                 if conn_success:
-                    Ipm25_live = AQI.calculate(EPA.calculate(pm2_5_live, humidity_live))
-                write_data(Ipm25_live, conn_success, data_file_name)
-                truncate_earliest_data(data_file_name, days_to_log)
+                    pm2_5_epa = EPA.calculate(humidity, pm2_5_cf1)
+                    pm2_5_epa_aqi = AQI.calculate(pm2_5_epa)
+                    if config.debug_print:
+                        print(f'humidity: {humidity}, pm2_5_cf1: {pm2_5_cf1}, pm2_5_epa: {pm2_5_epa}, pm2_5_epa_aqi: {pm2_5_epa_aqi}')
+                    write_data(pm2_5_epa_aqi, conn_success, config.data_file_name)
                 log_delay_loop_start = datetime.now()
-            elapsed_time = (datetime.now() - plot_delay_loop_start).seconds
-            if elapsed_time > plotting_interval:
-                plot_csv_to_jpg(data_file_name, width_pixels, height_pixels, dpi)
+            elapsed_time = (datetime.now() - plot_delay_loop_start).total_seconds()
+            if elapsed_time > config.plotting_interval:
+                plot_csv_to_jpg(config.data_file_name, config.width_pixels, config.height_pixels, config.dpi, config.include_aqi_text, config.chart_title, config.y_axis_label, config.x_axis_label)
                 plot_delay_loop_start = datetime.now()
+            elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600
+            if elapsed_time > config.truncate_interval:
+                truncate_earliest_data(config.data_file_name, config.days_to_log)
+                truncate_delay_loop_start = datetime.now()
         sleep(1)
 
 except KeyboardInterrupt:
