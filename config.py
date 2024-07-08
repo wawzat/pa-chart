@@ -25,5 +25,7 @@ dpi = 100
 chart_title = 'Particulate Sensor Data'
 y_axis_label = 'EPA PM 2.5 AQI'
 x_axis_label = ' '
+# Chart color mode: 'light' or 'dark'
+chart_color_mode = 'light'
 # Print values to console
 debug_print = True

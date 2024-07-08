@@ -213,6 +213,10 @@ def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100, incl
             values.append(float(row[1]))
     average = int(sum(values) / len(values))
     # Plot the data
+    if config.chart_color_mode == 'dark':
+        plt.style.use('dark_background')
+    elif config.chart_color_mode == 'light':
+        plt.style.use('default')
     plt.plot(dates, values)
     ax = plt.gca()  # Get current axes
     ax.set_xlim(min(dates), max(dates))
@@ -222,11 +226,11 @@ def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100, incl
     plt.xticks(rotation=45)
     plt.yticks(range(0, 201, 50))
     ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 100, 150, color='peachpuff', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 150, 200, color='lightcoral', alpha=0.5)
+    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.6)
+    ax.fill_between(ax.get_xlim(), 100, 150, color='orange', alpha=0.3)
+    ax.fill_between(ax.get_xlim(), 150, 200, color='red', alpha=0.3)
     plt.ylabel(y_axis_label)
-    plt.title(chart_title, pad=20)
+    plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
         # First part: "EPA AQI as of DATE" with font size 8 and not bold'%Y-%m-%dT%H:%M:%S'
         plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=8, ha='right', va='bottom', transform=ax.transAxes)
