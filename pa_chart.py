@@ -211,6 +211,7 @@ def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100, incl
                 continue
             dates.append(parsed_date)
             values.append(float(row[1]))
+    average = int(sum(values) / len(values))
     # Plot the data
     plt.plot(dates, values)
     ax = plt.gca()  # Get current axes
@@ -231,6 +232,14 @@ def plot_csv_to_jpg(filename, width_pixels=800, height_pixels=600, dpi=100, incl
         plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=8, ha='right', va='bottom', transform=ax.transAxes)
         # Second part: "value" with font size 12 and bold
         plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
+    if config.include_average_line:
+        plt.axhline(y=average, color='grey', linestyle='--')
+        # Get the x-axis limits to position the label on the right side of the plot horizontally
+        xlim = ax.get_xlim()
+        # Position the label on the right, slightly left to avoid being too close to the edge
+        right_x = xlim[1] - (xlim[1] - xlim[0]) * 0.02  # Adjust the 0.02 as needed for your plot's scale
+        # Position the label slightly above the average line
+        plt.text(right_x, average + 0.5, f'{average}', ha='right', va='bottom', color='grey', fontsize=8)
     plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
     plt.close()
 

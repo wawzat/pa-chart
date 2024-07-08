@@ -15,6 +15,8 @@ logging_finish_hour = 24
 truncate_interval = 24 # hours
 # Include the current EPA Aqi text on the plot
 include_aqi_text = True
+# Include an average line on the plot
+include_average_line = True
 # Dimensions of the plot jpg in pixels
 width_pixels = 800
 height_pixels = 600
