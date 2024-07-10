@@ -168,20 +168,21 @@ def process_sensor_reading(live_response: str) -> None:
         conn_success = True
         live_sensor_reading = json.loads(live_response.text)
         pm25_cf1 = (live_sensor_reading['pm2_5_cf_1'] + live_sensor_reading['pm2_5_cf_1_b']) / 2
+        pm25_atm = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
         humidity = (live_sensor_reading['current_humidity']) + 4
     else:
         logger.error('process_sensor_reading() connection error')
         conn_success = False
-    return pm25_cf1, humidity, conn_success
+    return pm25_cf1, pm25_atm, humidity, conn_success
 
 
 def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int = 600,
                     dpi: int = 100, include_aqi_text: bool = True,
                     include_average_line: bool = True,
                     chart_title: str = 'Particulate Sensor Data',
-                    y_axis_label: str = 'EPA PM 2.5 AQI',
                     x_axis_label: str = ' ',
-                    chart_color_mode: str = 'light') -> None:
+                    chart_color_mode: str = 'light',
+                    use_epa_conversion: bool = False) -> None:
     """
     Plots data from a CSV file and saves the plot as a JPG image.
 
@@ -200,6 +201,10 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     Returns:
         None
     """
+    if use_epa_conversion:
+        y_axis_label = 'EPA PM 2.5 AQI w/ EPA Conversion'
+    else:
+        y_axis_label = 'EPA PM 2.5 AQI'
     # Calculate figure size in inches
     width_inches = width_pixels / dpi
     height_inches = height_pixels / dpi
@@ -268,12 +273,21 @@ def main() -> None:
                 elapsed_time = (datetime.now() - log_delay_loop_start).total_seconds()
                 if elapsed_time > config.logging_interval:
                     live_response, conn_success = get_live_reading(config.connection_url)
-                    pm25_cf1, humidity, conn_success = process_sensor_reading(live_response)
+                    pm25_cf1, pm25_atm, humidity, conn_success = process_sensor_reading(live_response)
                     if conn_success:
-                        pm25_epa = EPA.calculate(humidity, pm25_cf1)
-                        pm25_epa_aqi = AQI.calculate(pm25_epa)
+                        if config.use_epa_conversion:
+                            pm25 = EPA.calculate(humidity, pm25_cf1)
+                        else:
+                            pm25 = pm25_atm
+                        pm25_epa_aqi = AQI.calculate(pm25)
                         if config.debug_print:
-                            print(f'Humidity: {humidity}, PM 2.5 cf1: {pm25_cf1}, PM 2.5 epa: {pm25_epa}, PM2.5 epa aqi: {pm25_epa_aqi}')
+                            if config.use_epa_conversion:
+                                pm25_txt = 'PM 2.5 w/ EPA Conversion'
+                                pm25_aqi_txt = 'PM 2.5 EPA AQI w/ EPA Conversion'
+                            else:
+                                pm25_txt = 'PM 2.5 ATM'
+                                pm25_aqi_txt = 'PM 2.5 EPA AQI'
+                            print(f'Humidity: {humidity}, PM 2.5 cf1: {pm25_cf1}, PM 2.5 atm: {pm25_atm}, {pm25_txt}: {pm25}, {pm25_aqi_txt}: {pm25_epa_aqi}')
                         write_data(pm25_epa_aqi, conn_success, config.data_file_name)
                     log_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - plot_delay_loop_start).total_seconds()
@@ -286,9 +300,9 @@ def main() -> None:
                                     config.include_aqi_text, 
                                     config.include_average_line, 
                                     config.chart_title, 
-                                    config.y_axis_label, 
                                     config.x_axis_label, 
-                                    config.chart_color_mode
+                                    config.chart_color_mode,
+                                    config.use_epa_conversion
                                     )
                     plot_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600

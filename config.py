@@ -1,6 +1,7 @@
 #User defined variables
 connection_url = "http://192.168.20.36/json"
 data_file_name = "sensor_data.csv"
+use_epa_conversion = False
 #data_file_name = "test_data.csv"
 # How often to get new data from the sensor in seconds
 logging_interval = 120 # seconds
@@ -23,7 +24,6 @@ height_pixels = 600
 dpi = 100
 # Chart text
 chart_title = 'Particulate Sensor Data'
-y_axis_label = 'EPA PM 2.5 AQI'
 x_axis_label = ' '
 # Chart color mode: 'light' or 'dark'
 chart_color_mode = 'light'
