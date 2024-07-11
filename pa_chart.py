@@ -1,6 +1,6 @@
-# Logs readings from a PurpleAir sensor on local LAN, converts to "EPA AQI", saves the logto a csv file
+# Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240708
+# James S. Lucas - 20240711
 import json
 import csv
 import requests
@@ -61,7 +61,7 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
 
 
 @retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
-def get_live_reading(connection_url):
+def get_live_reading(connection_url: str) -> tuple[requests.models.Response, bool]:
     """
     This function gets the live sensor reading from a PurpleAir sensor.
 
@@ -79,13 +79,13 @@ def get_live_reading(connection_url):
         conn_success = True
     else:
         conn_success = False
-        logger.error('get_live_reading() connection error')
+        logger.error('get_live_reading() connection error, live response not 200 ok')
     return live_response, conn_success
 
 
 def write_data(pm25_epa_aqi: float, conn_success: bool, filename: str = 'sensor_data.csv') -> None:
     """
-    This function writes data to a csv file with a consistent datetime format.
+    This function writes data to a csv file.
 
     Args:
         pm25_epa_aqi (float): The live PM2.5 value.
@@ -97,7 +97,7 @@ def write_data(pm25_epa_aqi: float, conn_success: bool, filename: str = 'sensor_
     """
     if not conn_success:
         logger.error('write_data() connection error')
-        sleep(2)
+        return
     # Check if the file is empty to decide on writing the header
     try:
         with open(filename, 'r', newline='') as file:
@@ -152,28 +152,24 @@ def truncate_earliest_data(filename: str, days_to_log: int = 14) -> None:
         writer.writerows(filtered_data)
 
 
-def process_sensor_reading(live_response: str) -> None:
+def process_sensor_reading(live_response: str) -> tuple[float, float, float]:
     """
     Process the sensor reading from the live response.
 
     Args:
-        live_response (Response): The live response object.
+        live_response (str): The live response from the sensor.
 
     Returns:
-            - pm25_cf1 (float): The average PM2.5 concentration.
+            - pm25_cf1 (float): The average PM2.5 CF1 value.
+            - pm25_atm (float): The average PM2.5 ATM value.
             - humidity (float): The adjusted humidity value.
-            - conn_success (bool): Indicates if the connection was successful.
     """
-    if live_response.ok:
-        conn_success = True
-        live_sensor_reading = json.loads(live_response.text)
-        pm25_cf1 = (live_sensor_reading['pm2_5_cf_1'] + live_sensor_reading['pm2_5_cf_1_b']) / 2
-        pm25_atm = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
-        humidity = (live_sensor_reading['current_humidity']) + 4
-    else:
-        logger.error('process_sensor_reading() connection error')
-        conn_success = False
-    return pm25_cf1, pm25_atm, humidity, conn_success
+
+    live_sensor_reading = json.loads(live_response.text)
+    pm25_cf1 = (live_sensor_reading['pm2_5_cf_1'] + live_sensor_reading['pm2_5_cf_1_b']) / 2
+    pm25_atm = (live_sensor_reading['pm2_5_atm'] + live_sensor_reading['pm2_5_atm_b']) / 2
+    humidity = (live_sensor_reading['current_humidity']) + 4
+    return pm25_cf1, pm25_atm, humidity
 
 
 def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int = 600,
@@ -273,7 +269,7 @@ def main() -> None:
                 elapsed_time = (datetime.now() - log_delay_loop_start).total_seconds()
                 if elapsed_time > config.logging_interval:
                     live_response, conn_success = get_live_reading(config.connection_url)
-                    pm25_cf1, pm25_atm, humidity, conn_success = process_sensor_reading(live_response)
+                    pm25_cf1, pm25_atm, humidity = process_sensor_reading(live_response)
                     if conn_success:
                         if config.use_epa_conversion:
                             pm25 = EPA.calculate(humidity, pm25_cf1)
