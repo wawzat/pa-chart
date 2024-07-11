@@ -25,6 +25,9 @@ dpi = 100
 # Chart text
 chart_title = 'Particulate Sensor Data'
 x_axis_label = ' '
+epa_conversion_y_axis_label = 'EPA PM 2.5 AQI w/ EPA Conversion'
+no_epa_conversion_y_axis_label = 'EPA PM 2.5 AQI'
+
 # Chart color mode: 'light' or 'dark'
 chart_color_mode = 'light'
 # Print values to console

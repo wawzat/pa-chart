@@ -202,9 +202,9 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
         None
     """
     if use_epa_conversion:
-        y_axis_label = 'EPA PM 2.5 AQI w/ EPA Conversion'
+        y_axis_label = config.epa_conversion_y_axis_label
     else:
-        y_axis_label = 'EPA PM 2.5 AQI'
+        y_axis_label = config.no_epa_conversion_y_axis_label
     # Calculate figure size in inches
     width_inches = width_pixels / dpi
     height_inches = height_pixels / dpi
