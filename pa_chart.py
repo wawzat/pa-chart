@@ -60,7 +60,7 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
     return decorator
 
 
-@retry(max_attempts=4, delay=90, escalation=90, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError))
+@retry(max_attempts=8, delay=90, escalation=160, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, requests.exceptions.Timeout))
 def get_live_reading(connection_url: str) -> tuple[requests.models.Response, bool]:
     """
     This function gets the live sensor reading from a PurpleAir sensor.
