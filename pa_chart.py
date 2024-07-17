@@ -1,6 +1,6 @@
 # Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240711
+# James S. Lucas - 20240717
 import json
 import csv
 import requests
@@ -10,6 +10,8 @@ import sys
 import logging
 from conversions import AQI, EPA
 import config
+from typing import Union
+from math import ceil
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
@@ -178,7 +180,9 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
                     chart_title: str = 'Particulate Sensor Data',
                     x_axis_label: str = ' ',
                     chart_color_mode: str = 'light',
-                    use_epa_conversion: bool = False) -> None:
+                    use_epa_conversion: bool = False,
+                    y_limit: Union[int, str] = 200,
+                    aqi_band_colors = {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}) -> None:
     """
     Plots data from a CSV file and saves the plot as a JPG image.
 
@@ -210,8 +214,7 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     with open(filename, 'r', newline='') as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
-        dates = []
-        values = []
+        dates, values = [], []
         for row in reader:
             try:
                 # Attempt to parse the datetime with the expected format
@@ -236,11 +239,22 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.xlabel(x_axis_label)
     plt.xticks(rotation=45)
-    plt.yticks(range(0, 201, 50))
-    ax.fill_between(ax.get_xlim(), 0, 50, color='palegreen', alpha=0.5)
-    ax.fill_between(ax.get_xlim(), 50, 100, color='palegoldenrod', alpha=0.6)
-    ax.fill_between(ax.get_xlim(), 100, 150, color='orange', alpha=0.3)
-    ax.fill_between(ax.get_xlim(), 150, 200, color='red', alpha=0.3)
+    if y_limit == 'auto':
+        y_limit = ceil(max(values) / 50) * 50
+    plt.yticks(range(0, y_limit+1, 50))
+    # Define the thresholds and their corresponding bounds
+    thresholds = [
+        (50, (0, 50)),
+        (100, (50, 100)),
+        (150, (100, 150)),
+        (200, (150, 200)),
+        (300, (200, 300)),
+        (500, (300, 500)),
+    ]
+    # Iterate through the thresholds
+    for limit, (lower_bound, upper_bound) in thresholds:
+        if y_limit >= limit:
+            ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=0.3)
     plt.ylabel(y_axis_label)
     plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
@@ -298,7 +312,8 @@ def main() -> None:
                                     config.chart_title, 
                                     config.x_axis_label, 
                                     config.chart_color_mode,
-                                    config.use_epa_conversion
+                                    config.use_epa_conversion,
+                                    config.y_limit
                                     )
                     plot_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600

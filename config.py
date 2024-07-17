@@ -14,7 +14,11 @@ logging_start_hour = 0
 logging_finish_hour = 24
 # How often to truncate the earliest data in the log file in hours
 truncate_interval = 24 # hours
-# Include the current EPA Aqi text on the plot
+# Set y-axis limit for the plot to 100, 150, 200 or 'auto'
+y_limit = 'auto'
+# AQI Band Colors
+aqi_band_colors = {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}
+# Include the current EPA AQI text on the plot
 include_aqi_text = True
 # Include an average line on the plot
 include_average_line = True
