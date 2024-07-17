@@ -14,7 +14,7 @@ logging_start_hour = 0
 logging_finish_hour = 24
 # How often to truncate the earliest data in the log file in hours
 truncate_interval = 24 # hours
-# Set y-axis limit for the plot to 100, 150, 200 or 'auto'
+# Set y-axis limit for the plot to 50, 100, 150, 200, 300, 500 or 'auto'
 y_limit = 'auto'
 # AQI Band Colors
 aqi_band_colors = {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}
