@@ -174,15 +174,19 @@ def process_sensor_reading(live_response: str) -> tuple[float, float, float]:
     return pm25_cf1, pm25_atm, humidity
 
 
-def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int = 600,
-                    dpi: int = 100, include_aqi_text: bool = True,
+def plot_csv_to_jpg(filename: str,
+                    width_pixels: int = 800,
+                    height_pixels: int = 600,
+                    dpi: int = 100,
+                    include_aqi_text: bool = True,
                     include_average_line: bool = True,
                     chart_title: str = 'Particulate Sensor Data',
                     x_axis_label: str = ' ',
                     chart_color_mode: str = 'light',
                     use_epa_conversion: bool = False,
                     y_limit: Union[int, str] = 200,
-                    aqi_band_colors = {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}) -> None:
+                    aqi_band_colors = {50: 'palegreen', 100: 'yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'},
+                    aqi_band_alphas = {50: 0.3, 100: 0.6, 150: 0.3, 200: 0.3, 300: 0.3, 500: 0.3}) -> None:
     """
     Plot the data from a CSV file and save it as a JPG image.
 
@@ -262,12 +266,12 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     # Iterate through the thresholds
     for limit, (lower_bound, upper_bound) in thresholds:
         if y_limit >= limit:
-            ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=0.3)
+            ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=aqi_band_alphas.get(limit))
     plt.ylabel(y_axis_label)
     plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
         # Label for AQI text
-        plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=8, ha='right', va='bottom', transform=ax.transAxes)
+        plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=9, ha='right', va='bottom', transform=ax.transAxes)
         # AQI text
         plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
     if include_average_line:
@@ -322,7 +326,9 @@ def main() -> None:
                                     config.x_axis_label, 
                                     config.chart_color_mode,
                                     config.use_epa_conversion,
-                                    config.y_limit
+                                    config.y_limit,
+                                    config.aqi_band_colors,
+                                    config.aqi_band_alphas
                                     )
                     plot_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600
