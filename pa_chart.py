@@ -294,10 +294,11 @@ def main() -> None:
                             if config.use_epa_conversion:
                                 pm25_txt = 'PM 2.5 w/ EPA Conversion'
                                 pm25_aqi_txt = 'PM 2.5 EPA AQI w/ EPA Conversion'
+                                print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_txt}: {pm25} | {pm25_aqi_txt}: {pm25_epa_aqi}')
                             else:
                                 pm25_txt = 'PM 2.5 ATM'
                                 pm25_aqi_txt = 'PM 2.5 EPA AQI'
-                            print(f'Humidity: {humidity}, PM 2.5 cf1: {pm25_cf1}, PM 2.5 atm: {pm25_atm}, {pm25_txt}: {pm25}, {pm25_aqi_txt}: {pm25_epa_aqi}')
+                                print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_aqi_txt}: {pm25_epa_aqi}')
                         write_data(pm25_epa_aqi, conn_success, config.data_file_name)
                     log_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - plot_delay_loop_start).total_seconds()
