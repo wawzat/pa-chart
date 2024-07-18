@@ -1,6 +1,6 @@
 # Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240717
+# James S. Lucas - 20240718
 import json
 import csv
 import requests
@@ -184,22 +184,29 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
                     y_limit: Union[int, str] = 200,
                     aqi_band_colors = {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}) -> None:
     """
-    Plots data from a CSV file and saves the plot as a JPG image.
+    Plot the data from a CSV file and save it as a JPG image.
 
-    Args:
-        filename (str): The path to the CSV file.
-        width_pixels (int, optional): The width of the plot in pixels. Defaults to 800.
-        height_pixels (int, optional): The height of the plot in pixels. Defaults to 600.
-        dpi (int, optional): The resolution of the plot in dots per inch. Defaults to 100.
-        include_aqi_text (bool, optional): Whether to include the AQI text on the plot. Defaults to True.
-        include_average_line (bool, optional): Whether to include the average line on the plot. Defaults to True.
-        chart_title (str, optional): The title of the plot. Defaults to 'Particulate Sensor Data'.
-        y_axis_label (str, optional): The label for the y-axis. Defaults to 'EPA PM 2.5 AQI'.
-        x_axis_label (str, optional): The label for the x-axis. Defaults to ' '.
-        chart_color_mode (str, optional): The color mode of the plot ('light' or 'dark'). Defaults to 'light'.
+    Parameters:
+    - filename (str): The path to the CSV file.
+    - width_pixels (int): The width of the output image in pixels. Default is 800.
+    - height_pixels (int): The height of the output image in pixels. Default is 600.
+    - dpi (int): The resolution of the output image in dots per inch. Default is 100.
+    - include_aqi_text (bool): Whether to include the EPA AQI text in the image. Default is True.
+    - include_average_line (bool): Whether to include the average line in the image. Default is True.
+    - chart_title (str): The title of the chart. Default is 'Particulate Sensor Data'.
+    - x_axis_label (str): The label for the x-axis. Default is ' ' (empty string).
+    - chart_color_mode (str): The color mode of the chart. 'light' for light background, 'dark' for dark background. Default is 'light'.
+    - use_epa_conversion (bool): Whether to use EPA conversion for the y-axis label. Default is False.
+    - y_limit (Union[int, str]): The upper limit of the y-axis. 'auto' for automatic calculation based on data. Default is 200.
+    - aqi_band_colors (dict): The colors for different AQI bands. Default is {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}.
 
     Returns:
-        None
+    - None
+
+    This function reads the data from a CSV file, plots it as a line chart, and saves it as a JPG image.
+    The function supports various customization options such as chart size, resolution, title, labels, color mode, and more.
+    It also provides the option to include the EPA AQI text and the average line in the chart.
+    The resulting image is saved as 'sensor_data.jpg' in the current directory.
     """
     if use_epa_conversion:
         y_axis_label = config.epa_conversion_y_axis_label
@@ -242,7 +249,8 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     if y_limit == 'auto':
         y_limit = ceil(max(values) / 50) * 50
     plt.yticks(range(0, y_limit+1, 50))
-    # Define the thresholds and their corresponding bounds
+    plt.ylim(0, y_limit)
+    # Define the thresholds and their corresponding bounds for the AQI bands
     thresholds = [
         (50, (0, 50)),
         (100, (50, 100)),
@@ -258,9 +266,9 @@ def plot_csv_to_jpg(filename: str, width_pixels: int = 800, height_pixels: int =
     plt.ylabel(y_axis_label)
     plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
-        # First part: "EPA AQI as of DATE" with font size 8 and not bold'%Y-%m-%dT%H:%M:%S'
+        # Label for AQI text
         plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=8, ha='right', va='bottom', transform=ax.transAxes)
-        # Second part: "value" with font size 12 and bold
+        # AQI text
         plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
     if include_average_line:
         plt.axhline(y=average, color='grey', linestyle='--')
