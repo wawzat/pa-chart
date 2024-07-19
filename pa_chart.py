@@ -283,7 +283,7 @@ def plot_csv_to_jpg(filename: str,
         # Position the label on the right, slightly left to avoid being too close to the edge
         right_x = xlim[1] - (xlim[1] - xlim[0]) * 0.02  # Adjust the 0.02 as needed for your plot's scale
         # Position the label slightly above the average line
-        plt.text(right_x, average + 0.5, f'{average}', ha='right', va='bottom', color='grey', fontsize=8)
+        plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', color='grey', fontsize=8)
     plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
     plt.close()
 
