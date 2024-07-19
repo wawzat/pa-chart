@@ -1,6 +1,6 @@
 # Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240718
+# James S. Lucas - 20240719
 import json
 import csv
 import requests
@@ -186,7 +186,7 @@ def plot_csv_to_jpg(filename: str,
                     use_epa_conversion: bool = False,
                     y_limit: Union[int, str] = 200,
                     aqi_band_colors = {50: 'palegreen', 100: 'yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'},
-                    aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.3, 200: 0.3, 300: 0.3, 500: 0.3}) -> None:
+                    aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 300: 0.3, 500: 0.3}) -> None:
     """
     Plot the data from a CSV file and save it as a JPG image.
 
