@@ -10,8 +10,8 @@ windows_drive = ''
 # To use different paths and file names uncomment the following lines and set the correct paths and file names 
 #linux_drive = '/mnt/d'
 #windows_drive = 'D:/'
-#data_storage_path = '1Data/pa_chart'
-#image_storage_path = '1Data/pa_chart'
+#data_storage_path = 'Users/wawzat/OneDrive/Documents/House/PurpleAir/pa_chart'
+#image_storage_path = 'Users/wawzat/OneDrive/Documents/House/PurpleAir/pa_chart'
 #
 # Data and image file names
 data_file_name = "sensor_data.csv"
