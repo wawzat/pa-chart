@@ -179,6 +179,11 @@ def plot_csv_to_jpg(filename: str,
                     height_pixels: int = 600,
                     dpi: int = 100,
                     include_aqi_text: bool = True,
+def plot_csv_to_jpg(filename: str,
+                    width_pixels: int = 800,
+                    height_pixels: int = 600,
+                    dpi: int = 100,
+                    include_aqi_text: bool = True,
                     include_average_line: bool = True,
                     chart_title: str = 'Particulate Sensor Data',
                     x_axis_label: str = ' ',
@@ -267,10 +272,12 @@ def plot_csv_to_jpg(filename: str,
     for limit, (lower_bound, upper_bound) in thresholds:
         if y_limit >= limit:
             ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=aqi_band_alphas.get(limit))
+            ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=aqi_band_alphas.get(limit))
     plt.ylabel(y_axis_label)
     plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
         # Label for AQI text
+        plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=9, ha='right', va='bottom', transform=ax.transAxes)
         plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=9, ha='right', va='bottom', transform=ax.transAxes)
         # AQI text
         plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
@@ -326,6 +333,9 @@ def main() -> None:
                                     config.x_axis_label, 
                                     config.chart_color_mode,
                                     config.use_epa_conversion,
+                                    config.y_limit,
+                                    config.aqi_band_colors,
+                                    config.aqi_band_alphas
                                     config.y_limit,
                                     config.aqi_band_colors,
                                     config.aqi_band_alphas
