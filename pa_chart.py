@@ -7,6 +7,7 @@ import requests
 from time import sleep
 from datetime import datetime, timedelta
 import sys
+import os
 import logging
 from conversions import AQI, EPA
 import config
@@ -85,14 +86,14 @@ def get_live_reading(connection_url: str) -> tuple[requests.models.Response, boo
     return live_response, conn_success
 
 
-def write_data(pm25_epa_aqi: float, conn_success: bool, filename: str = 'sensor_data.csv') -> None:
+def write_data(pm25_epa_aqi: float, conn_success: bool, full_data_file_path: str) -> None:
     """
     This function writes data to a csv file.
 
     Args:
         pm25_epa_aqi (float): The live PM2.5 value.
         conn_success (bool): A flag indicating if the connection to the sensor was successful.
-        filename (str): The name of the CSV file.
+        full_data_file_path (str): The path to the CSV file.
 
     Returns:
         None
@@ -102,12 +103,12 @@ def write_data(pm25_epa_aqi: float, conn_success: bool, filename: str = 'sensor_
         return
     # Check if the file is empty to decide on writing the header
     try:
-        with open(filename, 'r', newline='') as file:
+        with open(full_data_file_path, 'r', newline='') as file:
             first_char = file.read(1)
             file_empty = not bool(first_char)
     except FileNotFoundError:
         file_empty = True
-    with open(filename, 'a', newline='') as file:
+    with open(full_data_file_path, 'a', newline='') as file:
         writer = csv.writer(file)
         if file_empty:
             # Write the header if the file is empty
@@ -117,12 +118,12 @@ def write_data(pm25_epa_aqi: float, conn_success: bool, filename: str = 'sensor_
         writer.writerow([formatted_datetime, pm25_epa_aqi])
 
 
-def truncate_earliest_data(filename: str, days_to_log: int = 14) -> None:
+def truncate_earliest_data(full_data_file_path: str, days_to_log: int = 14) -> None:
     """
     Truncates the earliest data in a CSV file based on a specified number of days.
 
     Args:
-        filename (str): The path to the CSV file.
+        full_data_file_path (str): The path to the CSV file.
         days_to_log (int, optional): The number of days to keep in the file. Defaults to 14.
 
     Returns:
@@ -130,12 +131,12 @@ def truncate_earliest_data(filename: str, days_to_log: int = 14) -> None:
 
     """
     try:
-        with open(filename, mode='r', newline='') as file:
+        with open(full_data_file_path, mode='r', newline='') as file:
             reader = csv.DictReader(file)
             data = list(reader)
     except FileNotFoundError:
         # If the file is not found, just return without doing anything
-        logger.error(f"truncate_earliest_data() File not found: {filename}")
+        logger.error(f"truncate_earliest_data() File not found: {full_data_file_path}")
         return
     for row in data:
         row['datetime'] = datetime.strptime(row['datetime'], '%Y-%m-%dT%H:%M:%S')
@@ -148,7 +149,7 @@ def truncate_earliest_data(filename: str, days_to_log: int = 14) -> None:
     # Convert datetime objects back to strings for CSV output
     for row in filtered_data:
         row['datetime'] = row['datetime'].strftime('%Y-%m-%dT%H:%M:%S')
-    with open(filename, mode='w', newline='') as file:
+    with open(full_data_file_path, mode='w', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=reader.fieldnames)
         writer.writeheader()
         writer.writerows(filtered_data)
@@ -174,7 +175,8 @@ def process_sensor_reading(live_response: str) -> tuple[float, float, float]:
     return pm25_cf1, pm25_atm, humidity
 
 
-def plot_csv_to_jpg(filename: str,
+def plot_csv_to_jpg(full_data_file_path: str,
+                    full_image_file_path: str,
                     width_pixels: int = 800,
                     height_pixels: int = 600,
                     dpi: int = 100,
@@ -191,7 +193,8 @@ def plot_csv_to_jpg(filename: str,
     Plot the data from a CSV file and save it as a JPG image.
 
     Parameters:
-    - filename (str): The path to the CSV file.
+    - full_data_file_path (str): The path to the CSV file.
+    - full_image_file_path (str): The path to save the output image.
     - width_pixels (int): The width of the output image in pixels. Default is 800.
     - height_pixels (int): The height of the output image in pixels. Default is 600.
     - dpi (int): The resolution of the output image in dots per inch. Default is 100.
@@ -223,7 +226,7 @@ def plot_csv_to_jpg(filename: str,
     # Set figure size
     plt.figure(figsize=(width_inches, height_inches))
     # Read the CSV file
-    with open(filename, 'r', newline='') as file:
+    with open(full_data_file_path, 'r', newline='') as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
         dates, values = [], []
@@ -283,13 +286,25 @@ def plot_csv_to_jpg(filename: str,
         right_x = xlim[1] - (xlim[1] - xlim[0]) * 0.02  # Adjust the 0.02 as needed for your plot's scale
         # Position the label slightly above the average line
         plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', color='grey', fontsize=8)
-    plt.savefig('sensor_data.jpg', dpi=dpi, bbox_inches='tight')
+    plt.savefig(full_image_file_path, dpi=dpi, bbox_inches='tight')
     plt.close()
+
+
+def init():
+    # Determine the base path based on the operating system
+    if os.name == 'nt':  # Windows
+        base_path = config.windows_drive
+    else:  # Linux/WSL Ubuntu
+        base_path = config.linux_drive
+    full_data_file_path = os.path.join(base_path, config.data_storage_path, config.data_file_name)
+    full_image_file_path = os.path.join(base_path, config.image_storage_path, config.image_file_name)
+    log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
+    return log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path
 
 
 def main() -> None:
     try:
-        log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
+        log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path = init()
         # Loop forever
         while 1:
             if config.logging_start_hour < datetime.now().hour <= config.logging_finish_hour:
@@ -312,12 +327,13 @@ def main() -> None:
                                 pm25_txt = 'PM 2.5 ATM'
                                 pm25_aqi_txt = 'PM 2.5 EPA AQI'
                                 print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_aqi_txt}: {pm25_epa_aqi}')
-                        write_data(pm25_epa_aqi, conn_success, config.data_file_name)
+                        write_data(pm25_epa_aqi, conn_success, full_data_file_path)
                     log_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - plot_delay_loop_start).total_seconds()
                 if elapsed_time > config.plotting_interval:
                     plot_csv_to_jpg(
-                                    config.data_file_name, 
+                                    full_data_file_path, 
+                                    full_image_file_path,
                                     config.width_pixels, 
                                     config.height_pixels, 
                                     config.dpi, 
@@ -334,7 +350,7 @@ def main() -> None:
                     plot_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600
                 if elapsed_time > config.truncate_interval:
-                    truncate_earliest_data(config.data_file_name, config.days_to_log)
+                    truncate_earliest_data(full_data_file_path, config.days_to_log)
                     truncate_delay_loop_start = datetime.now()
             sleep(1)
 
