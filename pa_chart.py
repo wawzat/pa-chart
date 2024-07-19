@@ -202,7 +202,8 @@ def plot_csv_to_jpg(filename: str,
     - chart_color_mode (str): The color mode of the chart. 'light' for light background, 'dark' for dark background. Default is 'light'.
     - use_epa_conversion (bool): Whether to use EPA conversion for the y-axis label. Default is False.
     - y_limit (Union[int, str]): The upper limit of the y-axis. 'auto' for automatic calculation based on data. Default is 200.
-    - aqi_band_colors (dict): The colors for different AQI bands. Default is {50: 'palegreen', 100: 'palegoldenrod', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}.
+    - aqi_band_colors (dict): The colors for different AQI bands. Default is {50: 'palegreen', 100: 'yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}.
+    - aqi_band_alphas (dict): The alpha values for different AQI bands. Default is {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 300: 0.3, 500: 0.3}.
 
     Returns:
     - None
@@ -267,12 +268,10 @@ def plot_csv_to_jpg(filename: str,
     for limit, (lower_bound, upper_bound) in thresholds:
         if y_limit >= limit:
             ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=aqi_band_alphas.get(limit))
-            ax.fill_between(ax.get_xlim(), lower_bound, upper_bound, color=aqi_band_colors.get(limit), alpha=aqi_band_alphas.get(limit))
     plt.ylabel(y_axis_label)
     plt.title(chart_title, pad=20, fontsize=12, fontweight='bold')
     if include_aqi_text:
         # Label for AQI text
-        plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=9, ha='right', va='bottom', transform=ax.transAxes)
         plt.text(0.94, 0.05, 'EPA AQI as of ' + dates[-1].strftime('%m/%d/%Y %H:%M') + ': ', fontsize=9, ha='right', va='bottom', transform=ax.transAxes)
         # AQI text
         plt.text(0.99, 0.05, str(int(values[-1])), fontsize=12, fontweight='bold', ha='right', va='bottom', transform=ax.transAxes)
