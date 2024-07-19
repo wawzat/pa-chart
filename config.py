@@ -18,7 +18,7 @@ truncate_interval = 24 # hours
 y_limit = 'auto'
 # AQI Band Colors
 aqi_band_colors = {50: 'palegreen', 100: 'Yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}
-aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.4, 200: 0.3, 300: 0.3, 500: 0.3}
+aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.3, 200: 0.3, 300: 0.3, 500: 0.3}
 # Include the current EPA AQI text on the plot
 include_aqi_text = True
 # Include an average line on the plot
