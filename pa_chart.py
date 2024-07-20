@@ -63,6 +63,31 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
     return decorator
 
 
+def debug_print(humidity: float, pm25_cf1: float, pm25_atm: float, pm25: float, pm25_epa_aqi: float, use_epa_conversion: bool) -> None:
+    """
+    Prints the debug information for the given parameters.
+
+    Parameters:
+    humidity (float): The humidity value.
+    pm25_cf1 (float): The PM 2.5 cf1 value.
+    pm25_atm (float): The PM 2.5 atm value.
+    pm25 (float): The PM 2.5 value.
+    pm25_epa_aqi (float): The PM 2.5 EPA AQI value.
+    use_epa_conversion (bool): Indicates whether EPA conversion is used.
+
+    Returns:
+    None
+    """
+    if use_epa_conversion:
+        pm25_txt = 'PM 2.5 w/ EPA Conversion'
+        pm25_aqi_txt = 'PM 2.5 EPA AQI w/ EPA Conversion'
+        print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_txt}: {pm25} | {pm25_aqi_txt}: {pm25_epa_aqi}')
+    else:
+        pm25_txt = 'PM 2.5 ATM'
+        pm25_aqi_txt = 'PM 2.5 EPA AQI'
+        print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_aqi_txt}: {pm25_epa_aqi}')
+
+
 @retry(max_attempts=8, delay=90, escalation=160, exception=(requests.exceptions.RequestException, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, requests.exceptions.Timeout))
 def get_live_reading(connection_url: str) -> tuple[requests.models.Response, bool]:
     """
@@ -292,12 +317,16 @@ def plot_csv_to_jpg(full_data_file_path: str,
 
 def init():
     # Determine the base path based on the operating system
-    if os.name == 'nt':  # Windows
-        base_path = config.windows_drive
-    else:  # Linux/WSL Ubuntu
-        base_path = config.linux_drive
-    full_data_file_path = os.path.join(base_path, config.data_storage_path, config.data_file_name)
-    full_image_file_path = os.path.join(base_path, config.image_storage_path, config.image_file_name)
+    if config.use_default_storage_paths:
+        full_data_file_path = config.data_file_name
+        full_image_file_path = config.image_file_name
+    else:
+        if os.name == 'nt':  # Windows
+            base_path = config.custom_windows_drive
+        else:  # Linux
+            base_path = config.custom_linux_drive
+        full_data_file_path = os.path.join(base_path, config.custom_data_storage_path, config.data_file_name)
+        full_image_file_path = os.path.join(base_path, config.custom_image_storage_path, config.image_file_name)
     log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
     return log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path
 
@@ -319,14 +348,7 @@ def main() -> None:
                             pm25 = pm25_atm
                         pm25_epa_aqi = AQI.calculate(pm25)
                         if config.debug_print:
-                            if config.use_epa_conversion:
-                                pm25_txt = 'PM 2.5 w/ EPA Conversion'
-                                pm25_aqi_txt = 'PM 2.5 EPA AQI w/ EPA Conversion'
-                                print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_txt}: {pm25} | {pm25_aqi_txt}: {pm25_epa_aqi}')
-                            else:
-                                pm25_txt = 'PM 2.5 ATM'
-                                pm25_aqi_txt = 'PM 2.5 EPA AQI'
-                                print(f'Humidity: {humidity} | PM 2.5 cf1: {pm25_cf1} | PM 2.5 atm: {pm25_atm} | {pm25_aqi_txt}: {pm25_epa_aqi}')
+                            debug_print(humidity, pm25_cf1, pm25_atm, pm25, pm25_epa_aqi, config.use_epa_conversion)
                         write_data(pm25_epa_aqi, conn_success, full_data_file_path)
                     log_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - plot_delay_loop_start).total_seconds()

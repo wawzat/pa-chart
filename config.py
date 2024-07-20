@@ -1,17 +1,12 @@
 #User defined variables
 connection_url = "http://192.168.20.36/json"
 # Data paths and file names
-# Use empty stings ('') to store the data and images in the same directory as the script, comment out the following lines
-#  to use different paths and file names below
-data_storage_path = '' 
-image_storage_path = '' 
-linux_drive = ''
-windows_drive = ''
-# To use different paths and file names uncomment the following lines and set the correct paths and file names 
-#linux_drive = '/mnt/d'
-#windows_drive = 'D:/'
-#data_storage_path = 'Users/wawzat/OneDrive/Documents/House/PurpleAir/pa_chart'
-#image_storage_path = 'Users/wawzat/OneDrive/Documents/House/PurpleAir/pa_chart'
+use_default_storage_paths = True
+# Custom paths will be used if use_default_paths is set to False
+custom_linux_drive = '/mnt/d'
+custom_windows_drive = 'D:/'
+custom_data_storage_path = '1Data/pa_chart'
+custom_image_storage_path = '1Data/pa_chart'
 #
 # Data and image file names
 data_file_name = "sensor_data.csv"
