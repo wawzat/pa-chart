@@ -1,8 +1,9 @@
 #User defined variables
 connection_url = "http://192.168.20.36/json"
 # Data paths and file names
+# If default_storage_path = True, the data and image files will be stored in the same directory as the script.
 use_default_storage_paths = True
-# Custom paths will be used if use_default_paths is set to False
+# If default_storage_path = False, the data and image files will be stored in the custom paths below.
 custom_linux_drive = '/mnt/d'
 custom_windows_drive = 'D:/'
 custom_data_storage_path = '1Data/pa_chart'
