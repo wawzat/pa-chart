@@ -310,12 +310,22 @@ def plot_csv_to_jpg(full_data_file_path: str,
         # Position the label on the right, slightly left to avoid being too close to the edge
         right_x = xlim[1] - (xlim[1] - xlim[0]) * 0.02  # Adjust the 0.02 as needed for your plot's scale
         # Position the label slightly above the average line
-        plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', color='grey', fontsize=8)
+        plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', color='black', fontsize=10, fontweight='bold')
     plt.savefig(full_image_file_path, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 
 def init():
+    """
+    Initializes variables by determining the base path and setting up file paths.
+
+    Returns:
+        log_delay_loop_start (datetime): The start time for the log delay loop.
+        plot_delay_loop_start (datetime): The start time for the plot delay loop.
+        truncate_delay_loop_start (datetime): The start time for the truncate delay loop.
+        full_data_file_path (str): The full file path for the data file.
+        full_image_file_path (str): The full file path for the image file.
+    """
     # Determine the base path based on the operating system
     if config.use_default_storage_paths:
         full_data_file_path = config.data_file_name
