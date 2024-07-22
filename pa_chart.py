@@ -289,8 +289,12 @@ def plot_csv_to_jpg(full_data_file_path: str,
         (100, (50, 100)),
         (150, (100, 150)),
         (200, (150, 200)),
-        (300, (200, 300)),
-        (500, (300, 500)),
+        (250, (200, 250)),
+        (300, (250, 300)),
+        (350, (300, 350)),
+        (400, (350, 400)),
+        (450, (400, 450)),
+        (500, (450, 500)),
     ]
     # Iterate through the thresholds
     for limit, (lower_bound, upper_bound) in thresholds:
