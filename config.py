@@ -27,9 +27,17 @@ logging_finish_hour = 24
 truncate_interval = 24 # hours
 # Set y-axis limit for the plot to 50, 100, 150, 200, 300, 500 or 'auto'
 y_limit = 'auto'
+# Chart color mode: 'light', 'dark' or 'greyscale
+chart_color_mode = 'light'
 # AQI Band Colors
 aqi_band_colors = {50: 'palegreen', 100: 'Yellow', 150: 'Orange', 200: 'Red', 250: 'Red', 300: 'Purple', 350: 'Purple', 400: 'Purple', 450: 'Purple', 500: 'Maroon'}
-aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 250: 0.4, 300: 0.3, 350: 0.4, 400: 0.5, 450: 0.6, 500: 0.3}
+aqi_band_color_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 250: 0.4, 300: 0.3, 350: 0.4, 400: 0.5, 450: 0.6, 500: 0.3}
+# AQI Band Greyscales
+aqi_band_greyscales = {50: 'black', 100: 'black', 150: 'black', 200: 'black', 250: 'black', 300: 'black', 350: 'black', 400: 'black', 450: 'black', 500: 'black'}
+aqi_band_greyscale_alphas = {50: 0.1, 100: 0.2, 150: 0.3, 200: 0.4, 250: 0.5, 300: 0.6, 350: 0.7, 400: 0.8, 450: 0.9, 500: 1.0}
+# Plot line colors
+default_line_color = '#1f77b4'
+greyscale_line_color = 'white'
 # Include the current EPA AQI text on the plot
 include_aqi_text = True
 # Include an average line on the plot
@@ -43,7 +51,5 @@ chart_title = 'Particulate Sensor Data'
 x_axis_label = ' '
 epa_conversion_y_axis_label = 'EPA PM 2.5 AQI w/ EPA Conversion'
 no_epa_conversion_y_axis_label = 'EPA PM 2.5 AQI'
-# Chart color mode: 'light' or 'dark'
-chart_color_mode = 'light'
 # Print values to console
 debug_print = True

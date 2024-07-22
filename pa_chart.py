@@ -1,6 +1,6 @@
 # Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240719
+# James S. Lucas - 20240722
 import json
 import csv
 import requests
@@ -212,8 +212,8 @@ def plot_csv_to_jpg(full_data_file_path: str,
                     chart_color_mode: str = 'light',
                     use_epa_conversion: bool = False,
                     y_limit: Union[int, str] = 200,
-                    aqi_band_colors = {50: 'palegreen', 100: 'yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'},
-                    aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 300: 0.3, 500: 0.3}) -> None:
+                    aqi_band_colors = {50: 'palegreen', 100: 'Yellow', 150: 'Orange', 200: 'Red', 250: 'Red', 300: 'Purple', 350: 'Purple', 400: 'Purple', 450: 'Purple', 500: 'Maroon'},
+                    aqi_band_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 250: 0.4, 300: 0.3, 350: 0.4, 400: 0.5, 450: 0.6, 500: 0.3}) -> None:
     """
     Plot the data from a CSV file and save it as a JPG image.
 
@@ -231,7 +231,7 @@ def plot_csv_to_jpg(full_data_file_path: str,
     - use_epa_conversion (bool): Whether to use EPA conversion for the y-axis label. Default is False.
     - y_limit (Union[int, str]): The upper limit of the y-axis. 'auto' for automatic calculation based on data. Default is 200.
     - aqi_band_colors (dict): The colors for different AQI bands. Default is {50: 'palegreen', 100: 'yellow', 150: 'Orange', 200: 'Red', 300: 'Purple', 500: 'Maroon'}.
-    - aqi_band_alphas (dict): The alpha values for different AQI bands. Default is {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 300: 0.3, 500: 0.3}.
+    - aqi_band_color_alphas (dict): The alpha values for different AQI bands. Default is {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 300: 0.3, 500: 0.3}.
 
     Returns:
     - None
@@ -270,9 +270,13 @@ def plot_csv_to_jpg(full_data_file_path: str,
     # Plot the data
     if chart_color_mode == 'dark':
         plt.style.use('dark_background')
-    elif chart_color_mode == 'light':
+    elif chart_color_mode == 'light' or chart_color_mode == 'greyscale':
         plt.style.use('default')
-    plt.plot(dates, values)
+    if chart_color_mode == 'greyscale':
+        plot_line_color = config.greyscale_line_color
+    else:
+        plot_line_color = config.default_line_color
+    plt.plot(dates, values, color=plot_line_color, linewidth=1)
     ax = plt.gca()  # Get current axes
     ax.set_xlim(min(dates), max(dates))
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
@@ -314,7 +318,7 @@ def plot_csv_to_jpg(full_data_file_path: str,
         # Position the label on the right, slightly left to avoid being too close to the edge
         right_x = xlim[1] - (xlim[1] - xlim[0]) * 0.02  # Adjust the 0.02 as needed for your plot's scale
         # Position the label slightly above the average line
-        plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', color='black', fontsize=10, fontweight='bold')
+        plt.text(right_x, average + 2.1, f'{average}', ha='right', va='bottom', fontsize=10, fontweight='bold')
     plt.savefig(full_image_file_path, dpi=dpi, bbox_inches='tight')
     plt.close()
 
@@ -342,12 +346,18 @@ def init():
         full_data_file_path = os.path.join(base_path, config.custom_data_storage_path, config.data_file_name)
         full_image_file_path = os.path.join(base_path, config.custom_image_storage_path, config.image_file_name)
     log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
-    return log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path
+    if config.chart_color_mode == 'greyscale':
+        aqi_band_colors = config.aqi_band_greyscales
+        aqi_band_alphas = config.aqi_band_greyscale_alphas
+    else:
+        aqi_band_colors = config.aqi_band_colors
+        aqi_band_alphas = config.aqi_band_color_alphas
+    return log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path, aqi_band_colors, aqi_band_alphas
 
 
 def main() -> None:
     try:
-        log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path = init()
+        log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path, aqi_band_colors, aqi_band_alphas = init()
         # Loop forever
         while 1:
             if config.logging_start_hour < datetime.now().hour <= config.logging_finish_hour:
@@ -380,8 +390,8 @@ def main() -> None:
                                     config.chart_color_mode,
                                     config.use_epa_conversion,
                                     config.y_limit,
-                                    config.aqi_band_colors,
-                                    config.aqi_band_alphas
+                                    aqi_band_colors,
+                                    aqi_band_alphas
                                     )
                     plot_delay_loop_start = datetime.now()
                 elapsed_time = (datetime.now() - truncate_delay_loop_start).total_seconds() / 3600
