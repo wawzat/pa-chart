@@ -345,7 +345,15 @@ def init():
             base_path = config.custom_linux_drive
         full_data_file_path = os.path.join(base_path, config.custom_data_storage_path, config.data_file_name)
         full_image_file_path = os.path.join(base_path, config.custom_image_storage_path, config.image_file_name)
-    log_delay_loop_start = plot_delay_loop_start = truncate_delay_loop_start = datetime.now()
+        truncate_delay_loop_start_file = 'truncate_delay_loop_start.txt'
+    if os.path.exists(truncate_delay_loop_start_file):
+        with open(truncate_delay_loop_start_file, 'r') as file:
+            truncate_delay_loop_start = datetime.strptime(file.read().strip(), '%Y-%m-%d %H:%M:%S.%f')
+    else:
+        truncate_delay_loop_start = datetime.now()
+        with open(truncate_delay_loop_start_file, 'w') as file:
+            file.write(str(truncate_delay_loop_start))
+    log_delay_loop_start = plot_delay_loop_start = datetime.now()
     if config.chart_color_mode == 'greyscale':
         aqi_band_colors = config.aqi_band_greyscales
         aqi_band_alphas = config.aqi_band_greyscale_alphas
@@ -398,6 +406,9 @@ def main() -> None:
                 if elapsed_time > config.truncate_interval:
                     truncate_earliest_data(full_data_file_path, config.days_to_log)
                     truncate_delay_loop_start = datetime.now()
+                    # Write the value of truncate_delay_loop_start to a file
+                    with open('truncate_delay_loop_start.txt', 'w') as file:
+                        file.write(str(truncate_delay_loop_start))
             sleep(1)
 
     except KeyboardInterrupt:
