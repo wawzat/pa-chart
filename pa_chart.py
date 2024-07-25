@@ -354,12 +354,14 @@ def init():
         with open(truncate_delay_loop_start_file, 'w') as file:
             file.write(str(truncate_delay_loop_start))
     log_delay_loop_start = plot_delay_loop_start = datetime.now()
+    aqi_band_colors = config.aqi_band_colors
     if config.chart_color_mode == 'greyscale':
         aqi_band_colors = config.aqi_band_greyscales
         aqi_band_alphas = config.aqi_band_greyscale_alphas
-    else:
-        aqi_band_colors = config.aqi_band_colors
+    elif config.chart_color_mode == 'light':
         aqi_band_alphas = config.aqi_band_color_alphas
+    elif config.chart_color_mode == 'dark':
+        aqi_band_alphas = config.aqi_band_dark_color_alphas
     return log_delay_loop_start, plot_delay_loop_start, truncate_delay_loop_start, full_data_file_path, full_image_file_path, aqi_band_colors, aqi_band_alphas
 
 

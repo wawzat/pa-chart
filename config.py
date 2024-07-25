@@ -31,7 +31,10 @@ y_limit = 'auto'
 chart_color_mode = 'light'
 # AQI Band Colors
 aqi_band_colors = {50: 'palegreen', 100: 'Yellow', 150: 'Orange', 200: 'Red', 250: 'Red', 300: 'Purple', 350: 'Purple', 400: 'Purple', 450: 'Purple', 500: 'Maroon'}
+# AQI Band Alphas for color modes 'light'
 aqi_band_color_alphas = {50: 0.3, 100: 0.25, 150: 0.25, 200: 0.3, 250: 0.4, 300: 0.3, 350: 0.4, 400: 0.5, 450: 0.6, 500: 0.3}
+# AQI Band Alphas for color modes 'dark'
+aqi_band_dark_color_alphas = {50: 0.4, 100: 0.4, 150: 0.4, 200: 0.4, 250: 0.3, 300: 0.6, 350: 0.5, 400: 0.4, 450: 0.3, 500: 0.3}
 # AQI Band Greyscales
 aqi_band_greyscales = {50: 'black', 100: 'black', 150: 'black', 200: 'black', 250: 'black', 300: 'black', 350: 'black', 400: 'black', 450: 'black', 500: 'black'}
 aqi_band_greyscale_alphas = {50: 0.1, 100: 0.2, 150: 0.3, 200: 0.4, 250: 0.5, 300: 0.6, 350: 0.7, 400: 0.8, 450: 0.9, 500: 1.0}
