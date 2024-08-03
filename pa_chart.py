@@ -1,6 +1,6 @@
 # Logs readings from a PurpleAir sensor on local LAN, saves the log to a csv file
 #  and plots the data as a .jpg file.
-# James S. Lucas - 20240722
+# James S. Lucas - 20240803
 import json
 import csv
 import requests
@@ -54,10 +54,10 @@ def retry(max_attempts=3, delay=2, escalation=10, exception=(Exception,)):
                 except exception as e:
                     adjusted_delay = delay + escalation * attempts
                     attempts += 1
-                    logger.exception(f'Error in {func.__name__}(): attempt #{attempts} of {max_attempts}')
+                    logger.exception('Error in %s(): attempt #%d of %d', func.__name__, attempts, max_attempts)
                     if attempts < max_attempts:
                         sleep(adjusted_delay)
-            logger.exception(f'Error in {func.__name__}: max of {max_attempts} attempts reached')
+            logger.exception('Error in %s(): attempt #%d of %d', func.__name__, attempts, max_attempts)
             sys.exit()
         return wrapper
     return decorator
@@ -161,7 +161,7 @@ def truncate_earliest_data(full_data_file_path: str, days_to_log: int = 14) -> N
             data = list(reader)
     except FileNotFoundError:
         # If the file is not found, just return without doing anything
-        logger.error(f"truncate_earliest_data() File not found: {full_data_file_path}")
+        logger.error('truncate_earliest_data() File not found: %s', full_data_file_path)
         return
     for row in data:
         row['datetime'] = datetime.strptime(row['datetime'], '%Y-%m-%dT%H:%M:%S')
@@ -261,7 +261,7 @@ def plot_csv_to_jpg(full_data_file_path: str,
                 parsed_date = datetime.strptime(row[0],'%Y-%m-%dT%H:%M:%S')
             except ValueError:
                 # If parsing fails, print the problematic datetime string and skip this row
-                logger.error(f"Could not parse datetime: {row[0]}")
+                logger.error('Could not parse datetime: %s', row[0])
                 print(f"Could not parse datetime: {row[0]}")
                 continue
             dates.append(parsed_date)
